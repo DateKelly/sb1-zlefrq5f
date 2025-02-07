@@ -73,7 +73,7 @@ const BlogPosts = () => {
       <div className="flex w-full max-w-screen-xl bg-white rounded-lg shadow-lg flex-col lg:flex-row">
         {/* Left Column: Months list with year */}
         <div className="w-full lg:w-1/5 bg-white p-6 border-b lg:border-r lg:border-b-0 rounded-l-lg lg:rounded-l-lg border-gray-300">
-          <h2 className="text-center text-3xl font-semibold mb-8 text-gray-700">Months in {currentYear}</h2>
+          <h2 className="text-left text-2xl border-b pb-4 font-bold mb-8 text-gray-700">Months in {currentYear}</h2>
           <ul className="list-none p-0">
             {["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"].map((month, index) => (
               <li
@@ -98,7 +98,12 @@ const BlogPosts = () => {
             {posts.length > 0 ? (
               posts.map((post) => {
                 const { title, date, content, id, _embedded } = post;
-                const postDate = new Date(date).toLocaleDateString();
+                const postDate = new Date(date).toLocaleDateString('en-US', {
+                  weekday: 'long',
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                });
 
                 // Get the featured image URL using _embedded['wp:featuredmedia']
                 const featuredImageUrl = _embedded['wp:featuredmedia']?.[0]?.source_url;
@@ -107,20 +112,26 @@ const BlogPosts = () => {
                   <div key={id} className="bg-white p-6 rounded-lg shadow-md mb-8 hover:shadow-2xl transition-shadow duration-300">
                     {/* Featured Image */}
                     {featuredImageUrl && (
-                      <img
-                        src={featuredImageUrl}
-                        alt="Post Thumbnail"
-                        className="w-full h-96 object-cover rounded-md mb-6"
-                      />
+                      <div className="relative">
+                        <img
+                          src={featuredImageUrl}
+                          alt="Post Thumbnail"
+                          className="w-full h-100 object-cover rounded-md mb-6"
+                        />
+                        {/* Date Overlay */}
+                        <div className="absolute top-0 right-0 m-4 bg-orange-600 text-white py-2 px-4 rounded-lg text-sm font-semibold">
+                          {postDate}
+                        </div>
+                      </div>
                     )}
 
                     <h3
-                      className="text-3xl font-semibold text-gray-800 cursor-pointer hover:text-orange-600"
+                      className="text-3xl text-center font-bold text-gray-800 cursor-pointer hover:text-orange-600"
                       onClick={() => toggleContent(id)} // Toggle content on title click
                     >
                       {title.rendered}
                     </h3>
-                    <p className="text-sm text-gray-500 mt-2">{postDate}</p>
+                    {/* <p className="text-sm pt-4 text-gray-500 mt-2">{postDate}</p> */}
 
                     {/* Conditionally render the content if this post is expanded */}
                     {expandedPost === id && (
