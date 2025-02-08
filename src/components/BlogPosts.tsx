@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import './BlogPosts.css';
 
 interface Post {
   id: number;
@@ -283,48 +284,48 @@ const BlogPosts = () => {
         </div>
       </div>
 
-      {/* Modal for Full Post */}
-      {expandedPost && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-          <div className="bg-white w-3/4 lg:w-1/2 p-6 rounded-lg shadow-lg overflow-y-auto max-h-screen">
-            {/* Featured Image */}
-            <img
-              src={
-                posts.find((post) => post.id === expandedPost)?._embedded[
-                  "wp:featuredmedia"
-                ]
-                  ? posts.find((post) => post.id === expandedPost)?._embedded[
-                      "wp:featuredmedia"
-                    ]![0].source_url
-                  : "/default-image.jpg"
-              }
-              alt="Featured"
-              className="w-full h-48 object-cover rounded-t-lg mb-4"
-            />
-            {/* Post Title */}
-            <h2 className="text-2xl font-bold mb-4">
-              {posts.find((post) => post.id === expandedPost)?.title.rendered}
-            </h2>
-            {/* Post Content */}
-            <div
-              className="post-content"
-              dangerouslySetInnerHTML={{
-                __html:
-                  posts.find((post) => post.id === expandedPost)?.content
-                    .rendered || "",
-              }}
-            ></div>
+{/* Modal for Full Post */}
+{expandedPost && (
+  <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+    <div className="bg-white w-3/4 lg:w-1/2 p-6 rounded-lg shadow-lg overflow-y-auto max-h-screen">
+      {/* Featured Image */}
+      <img
+        src={
+          posts.find((post) => post.id === expandedPost)?._embedded[
+            "wp:featuredmedia"
+          ]
+            ? posts.find((post) => post.id === expandedPost)?._embedded[
+                "wp:featuredmedia"
+              ]![0].source_url
+            : "/default-image.jpg"
+        }
+        alt="Featured"
+        className="w-full h-48 object-cover rounded-t-lg mb-4"
+      />
+      {/* Post Title */}
+      <h2 className="text-2xl font-bold mb-4">
+        {posts.find((post) => post.id === expandedPost)?.title.rendered}
+      </h2>
+      {/* Post Content */}
+      <div
+        className="post-content mt-4 text-gray-700"
+        dangerouslySetInnerHTML={{
+          __html:
+            posts.find((post) => post.id === expandedPost)?.content
+              .rendered || "",
+        }}
+      ></div>
 
-            {/* Close Button */}
-            <button
-              onClick={closeModal}
-              className="w-full py-2 mt-4 bg-gray-300 text-gray-700 rounded-lg font-semibold transition-all duration-300 hover:bg-gray-400"
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Close Button */}
+      <button
+        onClick={closeModal}
+        className="w-full py-2 mt-4 bg-gray-300 text-gray-700 rounded-lg font-semibold transition-all duration-300 hover:bg-gray-400"
+      >
+        Close
+      </button>
+    </div>
+  </div>
+)}
     </div>
   );
 };
