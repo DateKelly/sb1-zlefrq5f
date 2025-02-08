@@ -127,9 +127,9 @@ const BlogPosts = () => {
 
   return (
     <div className="flex justify-center items-start min-h-screen rounded-lg p-6">
-      <div className="flex w-full max-w-screen-xl bg-white rounded-lg shadow-lg flex-col lg:flex-row">
+      <div className="flex w-full max-w-screen-xl flex-col lg:flex-row">
         {/* Left Column: Year and Month Filters */}
-        <div className="w-full lg:w-1/5 bg-white p-6 border-b lg:border-r lg:border-b-0 rounded-l-lg lg:rounded-l-lg border-gray-300">
+        <div className="w-full lg:w-1/5 p-6 border-b lg:border-r lg:border-b-0 border-gray-300">
           <h2 className="text-left text-2xl border-b pb-4 font-bold mb-8 text-gray-700">
             Latest AI News
           </h2>
