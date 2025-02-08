@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from "react";
-import './BlogPosts.css';
+import React, { useState, useEffect, useRef } from "react";
+import "./BlogPosts.css";
 
+// Define Post interface
 interface Post {
   id: number;
   title: { rendered: string };
@@ -11,26 +12,52 @@ interface Post {
   };
 }
 
+// Define interface for months with posts
+interface MonthWithPosts {
+  year: number;
+  month: number;
+  posts: Post[];
+}
+
 const BlogPosts = () => {
   const apiEndpoint = "https://nicolemanalang.com/wp-json/wp/v2/posts"; // Replace with your WordPress API endpoint
+  const customApiEndpoint =
+    "https://nicolemanalang.com/wp-json/custom-api/v1/months-with-posts"; // Custom endpoint for fetching months
 
   const [posts, setPosts] = useState<Post[]>([]);
   const [yearsWithPosts, setYearsWithPosts] = useState<number[]>([]); // Years with posts
-  const [monthsWithPosts, setMonthsWithPosts] = useState<number[]>([]); // Months with posts
+  const [monthsWithPosts, setMonthsWithPosts] = useState<MonthWithPosts[]>([]); // Months with posts (with year)
   const [selectedYear, setSelectedYear] = useState<number | null>(null); // Selected year
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null); // Selected month
   const [loading, setLoading] = useState<boolean>(false);
   const [totalPages, setTotalPages] = useState<number>(1);
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const [expandedPost, setExpandedPost] = useState<number | null>(null);
+  const [expandedPost, setExpandedPost] = useState<number | null>(null); // Post for modal view
   const [error, setError] = useState<string | null>(null); // For error handling
 
-  // Fetch all posts with pagination
-  useEffect(() => {
-    fetchPosts(currentPage, selectedYear, selectedMonth);
-  }, [currentPage, selectedYear, selectedMonth]);
+  const monthsFetched = useRef(false);
 
-  // Fetch posts with year and month filter
+  // Fetch available months from custom endpoint
+  const fetchAvailableMonths = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(customApiEndpoint);
+      if (!response.ok) throw new Error("Failed to fetch months");
+      const data: MonthWithPosts[] = await response.json();
+      setMonthsWithPosts(data);
+
+      // Extract years from the fetched months and set the years with posts
+      const years = [...new Set(data.map((item) => item.year))];
+      setYearsWithPosts(years); // Update years with available posts
+    } catch (error) {
+      console.error(error);
+      setError("Failed to load months. Please try again later.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch posts for the current year and month
   const fetchPosts = async (
     page: number,
     year: number | null,
@@ -61,31 +88,15 @@ const BlogPosts = () => {
       setPosts(postsData);
       setTotalPages(parseInt(response.headers.get("X-WP-TotalPages") || "1"));
 
-      // Extract years and months from the posts
-      extractYearsAndMonths(postsData);
+      if (!monthsFetched.current) {
+        monthsFetched.current = true; // Mark months as fetched
+      }
     } catch (error) {
       console.error(error);
       setError("Failed to load posts. Please try again later.");
     } finally {
       setLoading(false);
     }
-  };
-
-  // Extract years and months from posts and include 2024 and 2025
-  const extractYearsAndMonths = (postsData: Post[]) => {
-    const years: number[] = [2024, 2025]; // Start with 2024 and 2025 in the list
-    const months: number[] = [];
-
-    postsData.forEach((post) => {
-      const postYear = new Date(post.date).getFullYear();
-      const postMonth = new Date(post.date).getMonth() + 1; // Get month as 1-based index
-
-      if (!years.includes(postYear)) years.push(postYear);
-      if (!months.includes(postMonth)) months.push(postMonth);
-    });
-
-    setYearsWithPosts(years);
-    setMonthsWithPosts(months);
   };
 
   // Handle year change
@@ -97,7 +108,7 @@ const BlogPosts = () => {
 
   // Handle month change
   const handleMonthChange = (month: number) => {
-    setSelectedMonth(month); // Update the month
+    setSelectedMonth(month);
     setCurrentPage(1); // Reset to first page on month change
   };
 
@@ -105,7 +116,7 @@ const BlogPosts = () => {
   const resetFilters = () => {
     setSelectedYear(null);
     setSelectedMonth(null);
-    setCurrentPage(1); // Reset to the first page
+    setCurrentPage(1);
   };
 
   // Pagination handler
@@ -116,15 +127,20 @@ const BlogPosts = () => {
     });
   };
 
-  // Open Modal with full content
+  // Open modal for selected post
   const openModal = (postId: number) => {
     setExpandedPost(postId);
   };
 
-  // Close Modal
+  // Close modal
   const closeModal = () => {
     setExpandedPost(null);
   };
+
+  useEffect(() => {
+    fetchAvailableMonths();
+    fetchPosts(currentPage, selectedYear, selectedMonth);
+  }, [currentPage, selectedYear, selectedMonth]);
 
   return (
     <div className="flex justify-center items-start min-h-screen rounded-lg p-6">
@@ -162,23 +178,25 @@ const BlogPosts = () => {
               <>
                 <h3 className="text-lg font-semibold mt-6">Filter by Month</h3>
                 <ul className="list-none p-0 mt-4">
-                  {monthsWithPosts.map((month) => (
-                    <li
-                      key={month}
-                      className={`text-lg mb-4 cursor-pointer transition-colors duration-300 hover:text-orange-600 ${
-                        selectedMonth === month
-                          ? "text-orange-600 font-bold"
-                          : "text-gray-600"
-                      }`}
-                      onClick={() => handleMonthChange(month)}
-                      role="button"
-                      tabIndex={0}
-                    >
-                      {new Date(0, month - 1).toLocaleString("en-US", {
-                        month: "long",
-                      })}
-                    </li>
-                  ))}
+                  {monthsWithPosts
+                    .filter((item) => item.year === selectedYear)
+                    .map((month) => (
+                      <li
+                        key={month.month}
+                        className={`text-lg mb-4 cursor-pointer transition-colors duration-300 hover:text-orange-600 ${
+                          selectedMonth === month.month
+                            ? "text-orange-600 font-bold"
+                            : "text-gray-600"
+                        }`}
+                        onClick={() => handleMonthChange(month.month)}
+                        role="button"
+                        tabIndex={0}
+                      >
+                        {new Date(0, month.month - 1).toLocaleString("en-US", {
+                          month: "long",
+                        })}
+                      </li>
+                    ))}
                 </ul>
               </>
             )}
@@ -195,7 +213,7 @@ const BlogPosts = () => {
           </div>
         </div>
 
-        {/* Right Column: Blog posts in grid layout */}
+        {/* Right Column: Blog posts */}
         <div className="w-full lg:w-4/5 p-6 overflow-y-auto lg:pl-6">
           {/* Loading Indicator */}
           {loading && (
@@ -228,7 +246,6 @@ const BlogPosts = () => {
                     className="bg-white border rounded-lg shadow-lg flex flex-col justify-between"
                   >
                     <div className="relative">
-                      {/* Featured Image */}
                       <img
                         src={
                           _embedded["wp:featuredmedia"]
@@ -238,7 +255,6 @@ const BlogPosts = () => {
                         alt={title.rendered}
                         className="rounded-t-lg w-full h-48 object-cover"
                       />
-                      {/* Blog Post Date Overlay */}
                       <div className="absolute bottom-2 right-2 bg-black text-white text-xs px-2 py-1 rounded-md">
                         {formattedDate}
                       </div>
@@ -284,48 +300,48 @@ const BlogPosts = () => {
         </div>
       </div>
 
-{/* Modal for Full Post */}
-{expandedPost && (
-  <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-    <div className="bg-white w-3/4 lg:w-1/2 p-6 rounded-lg shadow-lg overflow-y-auto max-h-screen">
-      {/* Featured Image */}
-      <img
-        src={
-          posts.find((post) => post.id === expandedPost)?._embedded[
-            "wp:featuredmedia"
-          ]
-            ? posts.find((post) => post.id === expandedPost)?._embedded[
-                "wp:featuredmedia"
-              ]![0].source_url
-            : "/default-image.jpg"
-        }
-        alt="Featured"
-        className="w-full h-48 object-cover rounded-t-lg mb-4"
-      />
-      {/* Post Title */}
-      <h2 className="text-2xl font-bold mb-4">
-        {posts.find((post) => post.id === expandedPost)?.title.rendered}
-      </h2>
-      {/* Post Content */}
-      <div
-        className="post-content mt-4 text-gray-700"
-        dangerouslySetInnerHTML={{
-          __html:
-            posts.find((post) => post.id === expandedPost)?.content
-              .rendered || "",
-        }}
-      ></div>
+      {/* Modal for Full Post */}
+      {expandedPost && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+          <div className="bg-white w-3/4 lg:w-1/2 p-6 rounded-lg shadow-lg overflow-y-auto max-h-screen">
+            {/* Featured Image */}
+            <img
+              src={
+                posts.find((post) => post.id === expandedPost)?._embedded[
+                  "wp:featuredmedia"
+                ]
+                  ? posts.find((post) => post.id === expandedPost)?._embedded[
+                      "wp:featuredmedia"
+                    ]![0].source_url
+                  : "/default-image.jpg"
+              }
+              alt="Featured"
+              className="w-full h-48 object-cover rounded-t-lg mb-4"
+            />
+            {/* Post Title */}
+            <h2 className="text-2xl font-bold mb-4">
+              {posts.find((post) => post.id === expandedPost)?.title.rendered}
+            </h2>
+            {/* Post Content */}
+            <div
+              className="post-content mt-4 text-gray-700"
+              dangerouslySetInnerHTML={{
+                __html:
+                  posts.find((post) => post.id === expandedPost)?.content
+                    .rendered || "",
+              }}
+            ></div>
 
-      {/* Close Button */}
-      <button
-        onClick={closeModal}
-        className="w-full py-2 mt-4 bg-gray-300 text-gray-700 rounded-lg font-semibold transition-all duration-300 hover:bg-gray-400"
-      >
-        Close
-      </button>
-    </div>
-  </div>
-)}
+            {/* Close Button */}
+            <button
+              onClick={closeModal}
+              className="w-full py-2 mt-4 bg-gray-300 text-gray-700 rounded-lg font-semibold transition-all duration-300 hover:bg-gray-400"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
